@@ -130,3 +130,12 @@ trials was 0/60 at every threshold (3, 5, 8), so by the rule above **threshold =
 - **Seeds:** 1000–1029, both stages, one run each.
 - **Code:** whatever commit `results/test/manifest.json` records. The runner refuses uncommitted
   changes to `learner/`, `harness/` or this file.
+
+## Post-freeze harness fix (during the sealed test)
+
+The first test launch (commit `ec59516`) stopped when one job's world generator could not find
+a free floor position for a new thing ("no free position"). The fix changes only that failure
+path: it retries with another shape and size, or moves another thing. Jobs that did not hit the
+failure consume the same random numbers and produce identical worlds, so the 21 completed test
+files are kept unchanged. The learner, scoring and criteria were not touched. The remaining jobs
+were run with the fixed commit recorded in the manifest.

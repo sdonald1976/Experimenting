@@ -62,7 +62,18 @@ def apply_event(world: World, ev, rng, experienced_az, cycle):
     if kind == "move":
         t = world.things[rng.integers(len(world.things))]
         old = t.pos.copy()
-        t.pos = world.free_position(t.footprint_radius(), exclude=t, min_from=old)
+        try:
+            t.pos = world.free_position(t.footprint_radius(), exclude=t, min_from=old)
+        except RuntimeError:  # crowded: move another thing instead (failure path only)
+            for t in world.things:
+                old = t.pos.copy()
+                try:
+                    t.pos = world.free_position(t.footprint_radius(), exclude=t, min_from=old)
+                    break
+                except RuntimeError:
+                    continue
+            else:
+                raise
         az_options = experienced_az.get(t.gt_id) or [0.0]
         az = np.radians(float(rng.choice(az_options)))
         v = ret_cam - t.pos
@@ -84,7 +95,10 @@ def apply_event(world: World, ev, rng, experienced_az, cycle):
             size = _random_size(rng, shape)
             fp = World._fp(shape, size)
             if pos is None:
-                p = world.free_position(fp)
+                try:
+                    p = world.free_position(fp)
+                except RuntimeError:  # crowded: try another shape/size (failure path only)
+                    continue
                 break
             ok = all(np.linalg.norm(o.pos - pos) >= o.footprint_radius() + fp + 0.05 for o in world.things)
             if ok:
