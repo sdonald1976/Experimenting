@@ -10,6 +10,16 @@ positions. It has to:
 2. accumulate experiences of them;
 3. after they have been out of view, recognise them again — or honestly say it doesn't know.
 
+## Result
+
+**Sealed test: fails the pre-registered criteria** — narrowly on specificity. Read
+[RESULTS.md](RESULTS.md).
+
+- Uncontaminated units: yes.
+- Things that stayed put: 74% re-identified with 0.3% false claims, against a location-only
+  shortcut's 72% correct and 15% false.
+- New or replaced things wrongly linked: 5 of 177 (limit ≤ 5% at 95% confidence; bound 6.1%).
+
 ## Layout
 
 | Path | Side | What |
