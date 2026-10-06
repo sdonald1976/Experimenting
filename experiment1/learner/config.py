@@ -5,7 +5,7 @@ import copy
 EVIDENCE = [
     {"name": "spatial_extent"},
     {"name": "chroma_distribution"},
-    {"name": "metric_local_patterns"},
+    {"name": "metric_local_patterns_highpass"},  # v2 after dev diagnosis; v1 kept registered
     {"name": "location_self_frame"},
 ]
 
@@ -16,8 +16,8 @@ MAIN = {
     "continuity": {"name": "overlap_continuity"},
     "sampling": {"name": "fixed_interval"},
     "evidence": EVIDENCE,
-    "usefulness": {"name": "tail_ratio"},
-    "recognition": {"name": "leave_one_out_evidence"},
+    "usefulness": {"name": "tail_ratio_matched"},  # v2 after dev diagnosis
+    "recognition": {"name": "leave_one_out_evidence_median"},  # v2 after dev diagnosis
     "revision": {"name": "young_unit_reevaluation"},
 }
 
@@ -42,3 +42,8 @@ VARIANTS = {
     "baseline_random": _variant(recognition={"name": "baseline_random_existing"},
                                 revision={"name": "no_revision"}),
 }
+
+# Threshold sweep variants: dev-only, used to choose the threshold before the sealed test.
+for _t in (5, 8):
+    VARIANTS[f"main_threshold_{_t}"] = _variant(
+        recognition={"name": "leave_one_out_evidence_median", "params": {"threshold": float(_t)}})

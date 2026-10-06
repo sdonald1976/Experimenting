@@ -97,7 +97,7 @@ def apply_event(world: World, ev, rng, experienced_az, cycle):
     return info
 
 
-def run(seed: int, stage: str, out_dir: str, variants: list[str]):
+def run(seed: int, stage: str, out_dir: str, variants: list[str], dump_state: str | None = None):
     t_start = time.time()
     world = World(seed)
     ticks, kinds = build_schedule(world, stage)
@@ -219,6 +219,10 @@ def run(seed: int, stage: str, out_dir: str, variants: list[str]):
     for v in variants:
         rep = finals[v]["report"]
         dump = finals[v]["state_dump"]
+        if dump_state:
+            os.makedirs(dump_state, exist_ok=True)
+            with open(os.path.join(dump_state, f"{stage}_seed{seed}_{v}_state.json"), "w") as f:
+                f.write(dump)
         leak_terms = [CANARY] + [n for g, n in names.items() if g >= 10]
         audit = {
             "observations_unaltered": rep["observation_hashes"] == sent_hashes,
@@ -265,5 +269,6 @@ if __name__ == "__main__":
     ap.add_argument("--stage", choices=["return", "moved"], required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--variants", default=",".join(VARIANTS))
+    ap.add_argument("--dump-state", default=None, help="debug: write learner belief state JSON here")
     a = ap.parse_args()
-    print(run(a.seed, a.stage, a.out, a.variants.split(",")))
+    print(run(a.seed, a.stage, a.out, a.variants.split(","), a.dump_state))

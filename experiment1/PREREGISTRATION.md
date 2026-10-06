@@ -93,4 +93,28 @@ be reported, not hidden.
 
 ## Changes after dev
 
-(Filled in before the test run; empty means none.)
+The first dev run (`results/dev_v1/`, all 6 variants, code commit `39155db`) failed H1d (3/60
+false SAME) and H1a narrowly (contamination upper bound 0.104). Diagnosis on dev seeds 1 and 2
+(learner belief dumps) found two defects, fixed as NEW registered versions. The old versions
+remain registered and replaceable.
+
+1. **`metric_local_patterns` → `metric_local_patterns_highpass` (v2).** v1 patches were dominated
+   by smooth shading and face edges shared by every sphere or box, so "local pattern" evidence
+   acted as a second shape cue. v2 high-pass filters the grey image at the patch scale before
+   sampling. New parameter: `highpass_sigma_frac = 0.35`.
+2. **`tail_ratio` → `tail_ratio_matched` (v2), and `leave_one_out_evidence` →
+   `leave_one_out_evidence_median` (v2).** Recognition compares a query with a unit's
+   *best-matching* record, but v1's usefulness samples were *single-pair* distances, and
+   revision took a minimum over many × many pairs. Both bias decisions toward SAME. v2 builds
+   W/B samples with the same best-match statistic. With several query records, it scores each
+   one separately and takes the per-kind median. New parameter: `w_min_gap_ticks = 9`.
+
+**Threshold choice.** This rule was written down before looking at the sweep results. The
+recognition threshold is chosen on dev from {3, 5, 8} as the smallest value whose dev
+specificity bound is ≤ 0.05, i.e. the H1d criterion applied to dev. If none qualifies, the value
+with the fewest dev false-SAME on novel + same-place-different trials is used, and the test is
+expected to fail H1d — which will be reported as such.
+
+No other parameters were changed. Baseline variants are unaffected by these changes: they do not
+use the pattern extractor, usefulness or this recognition rule. Their dev numbers come from
+`dev_v1`.

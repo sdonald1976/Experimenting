@@ -252,10 +252,20 @@ class Learner:
                 self._touch(u, "co_visible")
 
         # ---- usefulness samples (continuity + simultaneous distinction only)
+        U = M["usefulness"]
         by_unit = {r.unit: r for r in made}
+        matched = hasattr(U, "within")
         for r in made:
             u = self.units[r.unit]
-            if r.link == "continuity":
+            if r.link != "continuity":
+                continue
+            if matched:
+                ds = U.within(u, r, self.extractors)
+                for k, d in ds.items():
+                    u.add_w(k, d)
+                if ds:
+                    self._touch(u, "usefulness")
+            else:
                 same_seg = [x for x in u.records[:-1] if x.segment == r.segment][-5:]
                 for x in same_seg:
                     for k, ex in self.extractors.items():
@@ -267,13 +277,19 @@ class Learner:
         for i, a in enumerate(ids):
             for b in ids[i + 1:]:
                 ra, rb = by_unit[a], by_unit[b]
-                for k, ex in self.extractors.items():
-                    if ra.ev.get(k) is not None and rb.ev.get(k) is not None:
-                        d = ex.distance(ra.ev[k], rb.ev[k])
-                        self.units[a].add_b(k, d)
-                        self.units[b].add_b(k, d)
-                self._touch(self.units[a], "usefulness")
-                self._touch(self.units[b], "usefulness")
+                ua, ub = self.units[a], self.units[b]
+                if matched:
+                    for uu, other in ((ua, rb), (ub, ra)):
+                        for k, d in U.between(uu, other, self.extractors, t).items():
+                            uu.add_b(k, d)
+                else:
+                    for k, ex in self.extractors.items():
+                        if ra.ev.get(k) is not None and rb.ev.get(k) is not None:
+                            d = ex.distance(ra.ev[k], rb.ev[k])
+                            ua.add_b(k, d)
+                            ub.add_b(k, d)
+                self._touch(ua, "usefulness")
+                self._touch(ub, "usefulness")
 
         # ---- revision of young identities
         identity_events = []

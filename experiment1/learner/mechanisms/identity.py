@@ -217,3 +217,71 @@ class NoRevision(Mechanism):
     VERSION = "1"
     STATUS = "BASELINE"
     ASSUMPTIONS = ["Identity decisions are never revisited."]
+
+
+@register("usefulness")
+class TailRatioMatchedUsefulness(TailRatioUsefulness):
+    """v2, added after DEV diagnosis: v1 compared a 'best match over many records' distance with
+    samples that were single record-to-record distances, which biases every comparison toward SAME
+    (more records -> smaller minimum). v2 builds samples with the SAME statistic recognition uses."""
+    NAME = "tail_ratio_matched"
+    VERSION = "2"
+    DEFAULTS = {**TailRatioUsefulness.DEFAULTS, "w_min_gap_ticks": 9}
+    ASSUMPTIONS = TailRatioUsefulness.ASSUMPTIONS[:1] + [
+        "  W sample = distance from a new continuity record of the unit to its BEST-matching earlier "
+        "record in the same continuous segment that is at least w_min_gap_ticks older "
+        "(Q6b signal 1, same statistic as recognition).",
+        "  B sample = distance from a record of a DIFFERENT unit observed on the same tick to this unit's "
+        "BEST-matching record from earlier ticks (Q6b signal 2, same statistic as recognition).",
+    ] + TailRatioUsefulness.ASSUMPTIONS[3:]
+
+    def within(self, unit, rec, extractors):
+        gap = self.p["w_min_gap_ticks"]
+        prior = [x for x in unit.records[:-1] if x.segment == rec.segment and rec.tick - x.tick >= gap]
+        return _best(rec, prior, extractors)
+
+    def between(self, unit, other_rec, extractors, tick):
+        prior = [x for x in unit.records if x.tick < tick]
+        return _best(other_rec, prior, extractors)
+
+
+def _best(rec, prior, extractors):
+    out = {}
+    for k, ex in extractors.items():
+        a = rec.ev.get(k)
+        if a is None:
+            continue
+        ds = [ex.distance(a, x.ev[k]) for x in prior if x.ev.get(k) is not None]
+        if ds:
+            out[k] = min(ds)
+    return out
+
+
+@register("recognition")
+class LeaveOneOutEvidenceMedian(LeaveOneOutEvidence):
+    """v2, added after DEV diagnosis: with several query records (revision), v1 took the minimum over
+    all query x unit record pairs - again a statistic unlike the usefulness samples. v2 scores each
+    query record separately (best match among the unit's records) and takes the per-kind MEDIAN."""
+    NAME = "leave_one_out_evidence_median"
+    VERSION = "2"
+    ASSUMPTIONS = LeaveOneOutEvidence.ASSUMPTIONS + [
+        "With several query records, each is scored on its own and the per-kind median score is used.",
+    ]
+
+    def unit_decision(self, query_evs, unit, ctx):
+        if len(query_evs) == 1:
+            return super().unit_decision(query_evs, unit, ctx)
+        per = [super(LeaveOneOutEvidenceMedian, self).unit_decision([q], unit, ctx) for q in query_evs]
+        kinds = {k for _, _, sc, _ in per for k in sc}
+        scores = {k: float(np.median([sc[k] for _, _, sc, _ in per if k in sc])) for k in kinds}
+        dists = {k: float(np.median([ds[k] for _, _, _, ds in per if k in ds])) for k in kinds}
+        t = self.p["threshold"]
+        S = sum(scores.values())
+        loo = [S - s for s in scores.values()]
+        if len(scores) >= 2 and S >= t and min(loo) >= t:
+            dec = SAME
+        elif len(scores) >= 2 and S <= -t and max(loo) <= -t:
+            dec = NEW
+        else:
+            dec = UNKNOWN_D
+        return dec, S, scores, dists

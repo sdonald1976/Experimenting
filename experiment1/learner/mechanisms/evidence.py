@@ -152,3 +152,38 @@ class LocationInSelfFrame(Evidence):
 
     def distance(self, a, b):
         return float(np.linalg.norm(a - b))
+
+
+@register("evidence")
+class MetricLocalPatternsHighPass(MetricLocalPatterns):
+    """v2 of the local-pattern extractor, added after DEV diagnosis: v1 patches were dominated by
+    smooth shading gradients and face edges that every sphere / box shares, so the 'pattern'
+    evidence acted as a second shape cue. v2 removes structure smoother than the patch scale."""
+    NAME = "metric_local_patterns_highpass"
+    VERSION = "2"
+    DEFAULTS = {**MetricLocalPatterns.DEFAULTS, "highpass_sigma_frac": 0.35}
+    ASSUMPTIONS = MetricLocalPatterns.ASSUMPTIONS + [
+        "Before sampling, grey levels are high-pass filtered: subtract a Gaussian blur with sigma = "
+        "highpass_sigma_frac * patch size (in pixels, from the region's median depth). Smooth shading "
+        "is removed; local marks and fine texture remain. Sharp shading steps at face edges remain "
+        "(known weakness).",
+    ]
+
+    def extract(self, ctx, pix):
+        H, W = ctx["gray"].shape
+        Z = ctx["cam_points"][..., 2].ravel()[pix]
+        Z = Z[np.isfinite(Z)]
+        if len(Z) < 30:
+            return None
+        size_px = ctx["fx"] * self.p["patch_m"] / float(np.median(Z))
+        ys, xs = np.divmod(pix, W)
+        m = int(3 * size_px) + 2
+        y0, y1 = max(0, ys.min() - m), min(H, ys.max() + m + 1)
+        x0, x1 = max(0, xs.min() - m), min(W, xs.max() + m + 1)
+        crop = ctx["gray"][y0:y1, x0:x1]
+        hp = crop - ndimage.gaussian_filter(crop, self.p["highpass_sigma_frac"] * size_px)
+        g = ctx["gray"].copy()
+        g[y0:y1, x0:x1] = hp
+        sub = dict(ctx)
+        sub["gray"] = g
+        return super().extract(sub, pix)
