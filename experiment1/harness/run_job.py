@@ -268,7 +268,7 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, required=True)
     ap.add_argument("--stage", choices=["return", "moved"], required=True)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--variants", default=",".join(VARIANTS))
+    ap.add_argument("--variants", default=",".join(v for v in VARIANTS if not v.startswith("main_threshold")))
     ap.add_argument("--dump-state", default=None, help="debug: write learner belief state JSON here")
     a = ap.parse_args()
     print(run(a.seed, a.stage, a.out, a.variants.split(","), a.dump_state))

@@ -118,3 +118,15 @@ expected to fail H1d — which will be reported as such.
 No other parameters were changed. Baseline variants are unaffected by these changes: they do not
 use the pattern extractor, usefulness or this recognition rule. Their dev numbers come from
 `dev_v1`.
+
+**Sweep result** (`results/dev_sweep/`): the dev false-SAME on novel + same-place-different
+trials was 0/60 at every threshold (3, 5, 8), so by the rule above **threshold = 3** (unchanged).
+
+## Frozen for the sealed test
+
+- **Variants run:** `main` (threshold 3), `ablation_no_location`, `baseline_always_new`,
+  `baseline_nearest_location`, `baseline_most_recent`, `baseline_random`.
+  The sweep variants are not run on test.
+- **Seeds:** 1000–1029, both stages, one run each.
+- **Code:** whatever commit `results/test/manifest.json` records. The runner refuses uncommitted
+  changes to `learner/`, `harness/` or this file.

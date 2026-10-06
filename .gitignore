@@ -1,5 +1,3 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-# temporary: in-progress run outputs, committed when each run completes
-experiment1/results/*/*_seed*.json
