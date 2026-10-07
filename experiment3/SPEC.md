@@ -124,4 +124,23 @@ Completed seeds are written atomically and never rerun.
 
 ## Changes after development
 
-(Listed here before the sealed run. Empty means none.)
+**No learner or criterion changes were made after seeing dev results.**
+
+One change was made after the smoke seed (seed 0, before the dev run and committed with the dev code):
+
+- Usefulness-history entries now record **every** sample that caused a change. Before, they recorded
+  only the last one — an Experiment 2 caveat.
+- The harness classifies a unit as "slid" when the same unit continuously tracked its thing through a
+  slide in view. The previous history-based rule found none because of that caveat.
+
+Dev observations, recorded before the sealed run:
+
+- **H3c may be untestable.** On dev, A_short and B_long made no false-SAME claims at all (0 of the
+  pool), so H3c(i) "B − A < 0" cannot be met. This is kept as pre-registered. If the sealed run shows
+  the same, H3c fails for lack of anything to reduce, and that will be reported as such.
+- **The fraction of thing-ticks tracked by a ≥ 30-tick segment is identical for every variant
+  (≈ 19%).** Segment boundaries are set by perception and continuity, not by recognition: a new
+  segment starts at the same tick whether the region is linked, made a new unit or made a
+  provisional unit.
+- **The "inoperative seeds" count is only meaningful for variants with long samples.** A_short and
+  D0_short_equal have none by design.
