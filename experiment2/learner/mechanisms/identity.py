@@ -168,9 +168,9 @@ class WindowedAUCUsefulness(Mechanism):
     votes and usefulness use a RECENCY WINDOW of samples (full history kept), and an explicit,
     logged usefulness w(u,k) is learned per unit and evidence kind."""
     NAME = "windowed_auc"
-    VERSION = "1"
+    VERSION = "2"
     DEFAULTS = {"w_min_gap_ticks": 9, "w_window": 30, "b_window": 60, "pseudo_count": 1.0,
-                "hard_quantile": 0.25, "shrink_n0": 10.0}
+                "hard_quantile": 0.25, "shrink_n0": 10.0, "vote": "nearest"}
     ASSUMPTIONS = [
         "Samples per (unit, kind), each stored with tick and producing record ids:",
         "  W = best-match distance from a new CONTINUITY record to the unit's earlier records in the same "
@@ -180,7 +180,11 @@ class WindowedAUCUsefulness(Mechanism):
         "No recognition- or revision-derived identity ever creates a sample (no feedback path).",
         "Only the most recent w_window W and b_window B samples are used (recency window - the assumption "
         "that lets beliefs be revised). All older samples remain stored.",
-        "Vote for distance d: P(W >= d) - P(B <= d), each with pseudo-count; in (-1, 1); 0 with no samples.",
+        "Vote for distance d ('nearest', v2 after DEV diagnosis): v = (2*P(|d-w| < |d-b|) - 1) * n/(n + pseudo_count), "
+        "over windowed samples w in W, b in B (ties count 1/2), n = min(#W, #B); 0 with no samples. "
+        "'Is d closer to what same-thing distances have been, or to what different-thing distances have been?' "
+        "v1 ('tails': P(W >= d) - P(B <= d)) returned ~0 whenever d fell between the two distributions, e.g. "
+        "revisit location drift larger than within-look jitter but far smaller than distances to other things.",
         "Usefulness w(u,k) = shrink * max(0, 2*AUC - 1), AUC = P(w < b) between windowed W and the hardest "
         "hard_quantile of windowed B; shrink = n/(n + shrink_n0), n = min(#W, #B). Starts at 0 (uncommitted).",
     ]
@@ -202,7 +206,14 @@ class WindowedAUCUsefulness(Mechanism):
     def vote(self, unit, k, d):
         W, B = self._win(unit, k)
         a = self.p["pseudo_count"]
-        return float((np.sum(W >= d) + a) / (len(W) + 2 * a) - (np.sum(B <= d) + a) / (len(B) + 2 * a))
+        if self.p["vote"] == "tails":
+            return float((np.sum(W >= d) + a) / (len(W) + 2 * a) - (np.sum(B <= d) + a) / (len(B) + 2 * a))
+        if len(W) == 0 or len(B) == 0:
+            return 0.0
+        dw, db = np.abs(d - W)[:, None], np.abs(d - B)[None, :]
+        p = ((dw < db).sum() + 0.5 * (dw == db).sum()) / (dw.size * db.size)
+        n = min(len(W), len(B))
+        return float((2 * p - 1) * n / (n + a))
 
     def usefulness(self, unit, k):
         W, B = self._win(unit, k)

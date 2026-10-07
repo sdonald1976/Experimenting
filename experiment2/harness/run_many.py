@@ -4,7 +4,7 @@
     python -m harness.run_many --split test     # seeds 2000-2029; refuses on uncommitted code
     python -m harness.status --split test       # inspect at any time, no Claude needed
 
-By default this re-launches itself with `setsid nohup` and returns immediately, so it survives the
+By default this re-launches itself in a new session under `nohup` and returns immediately, so it survives the
 terminal / UI closing. Files under results/<split>/:
     runner.pid      PID of the detached runner
     runner.log      runner stdout/stderr
@@ -109,7 +109,9 @@ def main():
     cmd = [sys.executable, "-m", "harness.run_many", "--split", a.split, "--parallel", str(a.parallel),
            "--out", out, "--foreground"] + (["--variants", a.variants] if a.variants else [])
     log = open(os.path.join(out, "runner.log"), "a")
-    p = subprocess.Popen(["setsid", "nohup", *cmd], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
+    # start_new_session=True puts the runner in its own session (setsid); nohup execs in place, so
+    # p.pid is the runner's PID and it survives the terminal / UI closing.
+    p = subprocess.Popen(["nohup", *cmd], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
                          stdin=subprocess.DEVNULL, start_new_session=True)
     open(os.path.join(out, "runner.pid"), "w").write(str(p.pid))
     print(f"started detached runner PID {p.pid}\n  status:  python -m harness.status --split {a.split}"
