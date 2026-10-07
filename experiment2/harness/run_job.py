@@ -138,6 +138,18 @@ def start_slides(world, rng, last_gt, tick):
     return slides
 
 
+def claimed_unit(export, gt, g):
+    """The learner unit that claims thing g on this tick (harness-side scoring rule), or None."""
+    P = SCORING_PARAMS
+    lab = export["labels"]
+    us, ov = np.unique(lab[(gt == g) & (lab > 0)], return_counts=True)
+    best = None
+    for u, o in zip(us, ov):
+        if o >= P["claim_min_overlap_px"] and o / (lab == u).sum() >= P["claim_min_purity"] and (best is None or o > best[1]):
+            best = (int(u), int(o))
+    return None if best is None else best[0]
+
+
 def run(seed, out_dir, variants, dump_state=None):
     t_start = time.time()
     world = World(seed)
@@ -171,6 +183,8 @@ def run(seed, out_dir, variants, dump_state=None):
     invisible = {}
     slides, slid_log = [], {}           # gt -> list of slide start ticks (phase 2, in view)
     moved_p2 = set()                    # things displaced while unobserved in phase 2
+    windows = {v: [] for v in variants}  # H2b: per slide window, which unit tracked each visible thing
+    open_windows = None
     obs_index = 0
     for i, tk in enumerate(ticks):
         if tk["event"] is not None:
@@ -230,6 +244,21 @@ def run(seed, out_dir, variants, dump_state=None):
                     g, n = np.unique(vals, return_counts=True)
                     j = int(np.argmax(n))
                     record_gt[v][rid] = (int(g[j]), float(n[j] / len(vals)))
+        if tk["slide_start"]:
+            slid_now = {s_["thing"].gt_id for s_ in slides}
+            open_windows = []
+            for t in world.things:
+                if (gt == t.gt_id).sum() >= SCORING_PARAMS["visible_min_px"]:
+                    for v in variants:
+                        open_windows.append((v, {"t0": i, "g": t.gt_id, "slid": t.gt_id in slid_now,
+                                                 "unit0": claimed_unit(exports[v], gt, t.gt_id)}))
+        last_obs = tk["part"] == "observe" and (i + 1 == len(ticks) or ticks[i + 1]["part"] != "observe")
+        if last_obs and open_windows is not None:
+            for v, w in open_windows:
+                w["t_end"] = i
+                w["unit_end"] = claimed_unit(exports[v], gt, w["g"]) if (gt == w["g"]).sum() else None
+                windows[v].append(w)
+            open_windows = None
         obs_index = obs_index + 1 if tk["part"] == "observe" else 0
         if tk["part"] == "observe" and cur is not None and obs_index - 1 == ANALYSIS_PARAMS["eval_observe_index"]:
             for t in world.things:
@@ -292,12 +321,21 @@ def run(seed, out_dir, variants, dump_state=None):
                    "slid_before": e["slid_before"], "final": e["outcome"][v]}
                   for c in cycles for g, e in c["eval"].items()]
         analysis = analyse_units(rep, record_gt[v], target_ids, T2, slid_log, moved_p2, seed)
+        hist_all = rep["usefulness_history"]
+        for w in windows[v]:
+            ok = w["unit0"] is not None and w["unit0"] == w["unit_end"]
+            w["same_unit_throughout"] = ok
+            if ok:
+                h = hist_all.get(w["unit0"], [])
+                w["loc_w_t0"] = value_at(h, "location_self_frame", w["t0"])
+                w["loc_w_end"] = value_at(h, "location_self_frame", w["t_end"])
         result["variants"][v] = {
             "mechanisms": rep["mechanisms"], "audit": audit, "trials": trials,
             "discovery": scorers[v].discovery(structure_ids, rep["canonical"]),
             "learner_stats": {k: rep[k] for k in ("decision_counts", "n_units", "n_units_provisional_open",
                                                    "n_records", "touch_log", "cpu_seconds")},
             "units": analysis,
+            "slide_windows": windows[v],
         }
         mapped = {u["unit"] for u in analysis}
         with open(os.path.join(hist_dir, f"seed{seed}_{v}.json"), "w") as f:
@@ -312,6 +350,17 @@ def run(seed, out_dir, variants, dump_state=None):
         json.dump(result, f, default=_json_default)
     os.replace(tmp, path)
     return path
+
+
+def value_at(hist, kind, tick):
+    """A unit's usefulness for `kind` as it stood at the end of `tick` (0 before any learning)."""
+    val = 0.0
+    for (t, k, old, new, nW, nB, cause) in hist:
+        if t > tick:
+            break
+        if k == kind:
+            val = new
+    return val
 
 
 def analyse_units(rep, rgt, target_ids, T2, slid_log, moved_p2, seed):

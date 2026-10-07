@@ -18,12 +18,12 @@ SCENE_PARAMS = {
     "turn_step_deg": 12.0,
     "away_move_ticks": 8,
     "observe_ticks_phase1": 10,
-    "observe_ticks_phase2": 20,
+    "observe_ticks_phase2": 30,
     "return_arc_deg": 35.0,
     "min_move_distance_m": 0.45,
     "phase1_cycles": 4,
     "phase2_cycles": {"swap": 2, "move": 1, "novel": 1, "replace": 1, "plain": 1},
-    "slide_speed_m_per_tick": 0.025,
+    "slide_speed_m_per_tick": 0.03,
     "slide_start_observe_tick": 10,   # after the 10-tick evaluation look
     "slide_things_per_window": [1, 2],
 }

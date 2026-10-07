@@ -93,9 +93,9 @@ sample; a recognition link starts a new segment. This is tested in `tests/`.
   - half are spheres or cubes, whose visible extent is nearly constant.
   - Every thing carries its own random marks.
 - **Phase 1 (location reliable):** exploration arc, then 4 look-away/return cycles. Nothing moves.
-- **Phase 2 (location becomes unreliable):** 6 cycles with 20-tick observation windows. The
+- **Phase 2 (location becomes unreliable):** 6 cycles with 30-tick observation windows. The
   identity evaluation happens at observation tick 10, as in Experiment 1. Then 1–2 visible things
-  **slide in plain view** (2.5 cm/tick for 10 ticks). While the camera is away:
+  **slide in plain view** (3 cm/tick for 20 ticks = 60 cm). While the camera is away:
   - 2 cycles swap two things' locations;
   - 1 cycle moves a thing;
   - 1 cycle introduces a novel thing;
@@ -124,7 +124,7 @@ to the learner's own records; the learner never sees it. For a unit u mapped to 
 |---|---|---|---|
 | **H2a** | A's learned usefulness corresponds to what its experience made discriminating | per-seed Spearman ρ over (unit, kind) pairs between final w(u,k) and oracle AUC(u,k); mean over seeds | CI lower bound ≤ 0, **or** not above the same ρ computed with B's fixed weights (paired difference CI lower bound ≤ 0) |
 | **H2a-local** | usefulness is local: differences between units in w(u,k) track differences in the oracle | per seed, per kind: Spearman ρ across units; averaged over kinds, then over seeds | CI lower bound ≤ 0 |
-| **H2b** | A revises location usefulness when location stops predicting identity | Δ = w(u, location) at end − at start of phase 2. Difference-in-differences: mean Δ for units whose thing slid while observed − mean Δ for units whose thing never moved | CI upper bound ≥ 0 |
+| **H2b** | A revises location usefulness when its own continuous experience shows location changing | per slide window: Δ = w(u, location) at window end − at slide start, for the unit tracking a thing throughout; mean Δ(slid) − mean Δ(not slid, same window); per-seed mean | CI upper bound ≥ 0 |
 | **H2c** | learned weighting makes identity claims safer than equal weighting without giving up re-identification | (i) false-SAME rate over all phase-2 identity trials plus novel / same-place-different trials: A − C; (ii) correct-SAME rate over eligible reappearance trials (both phases): A − C | (i) CI upper bound ≥ 0, **or** (ii) CI lower bound < −0.10 |
 | **H2c-B** | same comparison, A vs. fixed weights B | same, A − B | same |
 
@@ -159,4 +159,31 @@ rerun.
 
 ## Changes after development
 
-(Listed here before the sealed run. Empty means none.)
+All of these were made on dev seeds 0–7 before any sealed result existed. Earlier dev outputs are kept in
+`results/dev_v1/` (first full dev run, after change 1). The smoke seed preceded change 1.
+
+1. **Shared vote, v1 → v2 (`windowed_auc` v2).** Smoke seed 0 showed A saying UNKNOWN on almost every
+   reappearance. Cause: the v1 vote P(W ≥ d) − P(B ≤ d) is ≈ 0 whenever d falls *between* the two sample
+   distributions. A revisit's location after self-motion drift (≈ 5–10 cm) is larger than within-look
+   jitter (≈ 1 cm) but far smaller than distances to other things (≥ 40 cm).
+   - v2 vote: (2·P(|d−w| < |d−b|) − 1) · n/(n+1) — "is d closer to past same-thing or to past
+     different-thing distances?"
+   - It changes the vote shared by A, B and C. It is not a change to A's weighting.
+   - The v1 vote remains selectable (`vote: "tails"`).
+2. **H2b metric redefined (dev_v1 gave no data).**
+   - The original metric needs phase-1 units to keep learning in phase 2. But a thing seen again after an
+     UNKNOWN usually continues in a *new* unit, so no seed had both groups.
+   - New metric: per slide window, the location usefulness of the unit tracking each visible thing, at the
+     slide start vs. the window end (same unit throughout). Δ(things that slid) − Δ(things that did not
+     slide in the same window), averaged per seed.
+   - Falsified if the seed-bootstrap CI upper bound ≥ 0. The original metric is still reported, as
+     descriptive only.
+3. **Slides made comparable to the spacing between things.** dev_v1 slides (25 cm) were smaller than the
+   minimum spacing between things, so location honestly stayed discriminating. Now:
+   - 3 cm/tick for 20 ticks = 60 cm;
+   - phase-2 observation windows are 30 ticks;
+   - evaluation stays at observation tick 10, before any slide.
+4. **Runner launcher:** `runner.pid` now records the runner itself, not a wrapper process.
+
+No learner parameter (window sizes, quantile, shrinkage, threshold, fixed weights) was changed after
+seeing dev results.

@@ -111,6 +111,25 @@ def correspondence(res):
     return rho_a, rho_b, rho_local, deltas
 
 
+def window_did(res, v="A_learned"):
+    """H2b: per seed, mean over slide windows of [mean delta(slid things' units) - mean delta(static ones)],
+    delta = location usefulness at window end - at slide start, same unit tracking the thing throughout."""
+    out = []
+    for r in res:
+        per = []
+        wins = {}
+        for w in r["variants"][v].get("slide_windows", []):
+            if w.get("same_unit_throughout"):
+                wins.setdefault(w["t0"], []).append(w)
+        for ws in wins.values():
+            ds = [w["loc_w_end"] - w["loc_w_t0"] for w in ws if w["slid"]]
+            dn = [w["loc_w_end"] - w["loc_w_t0"] for w in ws if not w["slid"]]
+            if ds and dn:
+                per.append(np.mean(ds) - np.mean(dn))
+        out.append(np.mean(per) if per else np.nan)
+    return out
+
+
 def summarize(res):
     rng = np.random.default_rng(777)
     variants = list(res[0]["variants"])
@@ -146,7 +165,12 @@ def summarize(res):
     S["H2a"] = {"rho_A": ci(ra, rng), "rho_B_fixed": ci(rb, rng), "rho_A_minus_B": ci(diff, rng),
                 "seeds_with_value": int(np.isfinite(np.array(ra, float)).sum())}
     S["H2a_local"] = {"rho_local": ci(rl, rng), "seeds_with_value": int(np.isfinite(np.array(rl, float)).sum())}
-    S["H2b"] = {"did_location_delta": ci(dd, rng), "seeds_with_value": int(np.isfinite(np.array(dd, float)).sum())}
+    wd = window_did(res)
+    S["H2b"] = {"did_location_delta": ci(wd, rng), "seeds_with_value": int(np.isfinite(np.array(wd, float)).sum()),
+                "n_windows_slid_tracked": sum(1 for r in res for w in r["variants"]["A_learned"].get("slide_windows", [])
+                                              if w.get("same_unit_throughout") and w["slid"])}
+    S["H2b_long_descriptive"] = {"did_location_delta": ci(dd, rng),
+                                 "seeds_with_value": int(np.isfinite(np.array(dd, float)).sum())}
     for other in ("C_equal", "B_fixed"):
         if other in variants:
             S[f"H2c_vs_{other}"] = {
@@ -189,7 +213,8 @@ def markdown(S, split):
          f"| | same, B's fixed weights | {fci(S['H2a']['rho_B_fixed'])} | |",
          f"| | A − B | {fci(S['H2a']['rho_A_minus_B'])} | |",
          f"| H2a-local | across-unit Spearman within kind | {fci(S['H2a_local']['rho_local'])} | {C['H2a_local']} |",
-         f"| H2b | Δ location usefulness, slid − static units | {fci(S['H2b']['did_location_delta'])} (seeds with value: {S['H2b']['seeds_with_value']}) | {C['H2b']} |"]
+         f"| H2b | Δ location usefulness over a slide window, slid − non-slid (same window) | {fci(S['H2b']['did_location_delta'])} (seeds: {S['H2b']['seeds_with_value']}, tracked slides: {S['H2b']['n_windows_slid_tracked']}) | {C['H2b']} |",
+         f"| (descr.) | Δ across all of phase 2, pre-phase-2 units | {fci(S['H2b_long_descriptive']['did_location_delta'])} (seeds: {S['H2b_long_descriptive']['seeds_with_value']}) | |"]
     for o in ("C_equal", "B_fixed"):
         h = S.get(f"H2c_vs_{o}")
         if h:
