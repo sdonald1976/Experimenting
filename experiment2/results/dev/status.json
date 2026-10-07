@@ -1,0 +1,82 @@
+{
+ "split": "dev",
+ "seeds": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7
+ ],
+ "git_commit": "065b861a2d6502fd5fa2b8ba380890947667ccfc",
+ "git_dirty_paths": "M experiment2/harness/report.py\n M experiment2/harness/run_job.py\n M experiment2/harness/scene.py",
+ "runner_pid": 1939,
+ "host": "vm",
+ "started": "2026-10-07 14:16:43",
+ "finished": "2026-10-07 14:41:23",
+ "command": "/home/user/Experimenting/experiment2/harness/run_many.py --split dev --parallel 2 --out /home/user/Experimenting/experiment2/results/dev --foreground",
+ "variants": "",
+ "jobs": {
+  "0": {
+   "state": "done",
+   "pid": 1946,
+   "started": "2026-10-07 14:16:43",
+   "finished": "2026-10-07 14:23:16",
+   "seconds": 392
+  },
+  "1": {
+   "state": "done",
+   "pid": 1947,
+   "started": "2026-10-07 14:16:43",
+   "finished": "2026-10-07 14:24:16",
+   "seconds": 453
+  },
+  "2": {
+   "state": "done",
+   "pid": 2239,
+   "started": "2026-10-07 14:23:16",
+   "finished": "2026-10-07 14:29:36",
+   "seconds": 380
+  },
+  "3": {
+   "state": "done",
+   "pid": 2299,
+   "started": "2026-10-07 14:24:16",
+   "finished": "2026-10-07 14:29:59",
+   "seconds": 343
+  },
+  "4": {
+   "state": "done",
+   "pid": 2429,
+   "started": "2026-10-07 14:29:36",
+   "finished": "2026-10-07 14:35:52",
+   "seconds": 376
+  },
+  "5": {
+   "state": "done",
+   "pid": 2478,
+   "started": "2026-10-07 14:29:59",
+   "finished": "2026-10-07 14:36:01",
+   "seconds": 362
+  },
+  "6": {
+   "state": "done",
+   "pid": 2619,
+   "started": "2026-10-07 14:35:52",
+   "finished": "2026-10-07 14:41:23",
+   "seconds": 331
+  },
+  "7": {
+   "state": "done",
+   "pid": 2663,
+   "started": "2026-10-07 14:36:01",
+   "finished": "2026-10-07 14:40:45",
+   "returncode": 1,
+   "error_tail": "Traceback (most recent call last):\n  File \"<frozen runpy>\", line 203, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/home/user/Experimenting/experiment2/harness/run_job.py\", line 444, in <module>\n    print(run(a.seed, a.out, a.variants.split(\",\"), a.dump_state))\n          ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/user/Experimenting/experiment2/harness/run_job.py\", line 192, in run\n    info = apply_event(world, tk[\"event\"], event_rng, experienced_az, tk[\"cycle\"])\n  File \"/home/user/Experimenting/experiment2/harness/run_job.py\", line 111, in apply_event\n    raise RuntimeError(\"could not place new thing\")\nRuntimeError: could not place new thing\n",
+   "note": "rerun manually after harness failure-path fix; see logs/seed7_rerun.log"
+  }
+ },
+ "updated": "2026-10-07 14:41:23"
+}

@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 203, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/home/user/Experimenting/experiment2/harness/run_job.py", line 444, in <module>
+    print(run(a.seed, a.out, a.variants.split(","), a.dump_state))
+          ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/user/Experimenting/experiment2/harness/run_job.py", line 192, in run
+    info = apply_event(world, tk["event"], event_rng, experienced_az, tk["cycle"])
+  File "/home/user/Experimenting/experiment2/harness/run_job.py", line 111, in apply_event
+    raise RuntimeError("could not place new thing")
+RuntimeError: could not place new thing

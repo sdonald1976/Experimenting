@@ -183,7 +183,20 @@ All of these were made on dev seeds 0–7 before any sealed result existed. Earl
    - 3 cm/tick for 20 ticks = 60 cm;
    - phase-2 observation windows are 30 ticks;
    - evaluation stays at observation tick 10, before any slide.
-4. **Runner launcher:** `runner.pid` now records the runner itself, not a wrapper process.
+4. **Harness failure path:** if a novel or replacement thing cannot be placed on a crowded floor (dev seed 7
+   crashed), that event is skipped, the world is restored, and the skip is recorded in the result file
+   (`skipped_events`). Worlds that place successfully are unaffected.
+5. **Runner launcher:** `runner.pid` now records the runner itself, not a wrapper process.
 
 No learner parameter (window sizes, quantile, shrinkage, threshold, fixed weights) was changed after
 seeing dev results.
+
+**Dev result for H2b (after change 3), recorded before the sealed run:** it was not supported on dev,
+Δ = +0.006 [−0.074, 0.097] over 41 tracked slides. Diagnosis:
+- A W sample is the best-match distance to records ≥ 9 ticks older in the same look. During a slide that
+  best match is ~9 ticks back (≤ 27 cm), still closer than any other thing.
+- So the learner's own continuity statistic honestly reports that location still separates the thing.
+- The statistic measures short-term stability, while recognition after an absence needs long-term stability.
+
+This was deliberately **not** changed, to avoid tuning toward the hypothesis. H2b is expected to fail on
+the sealed test for this reason.

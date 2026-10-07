@@ -65,7 +65,7 @@ def _face_experienced(t, ret_cam, rng, experienced_az):
 
 def apply_event(world: World, ev, rng, experienced_az, cycle):
     kind = ev["kind"]
-    info = {"kind": kind, "moved": [], "swapped": [], "added": None, "removed": None}
+    info = {"kind": kind, "moved": [], "swapped": [], "added": None, "removed": None, "skipped": False}
     ret_cam = arc_pos(ev["return_alpha"])
     if kind == "swap":
         a, b = rng.choice(len(world.things), size=2, replace=False)
@@ -108,7 +108,12 @@ def apply_event(world: World, ev, rng, experienced_az, cycle):
                 placed = pos
                 break
         if placed is None:
-            raise RuntimeError("could not place new thing")
+            # Failure path only (crowded floor): undo and record the event as skipped. Logged in the result.
+            if kind == "replace":
+                world.things.append(victim)
+                info["removed"] = None
+            info["skipped"] = True
+            return info
         t = world.add_thing(shape, col, size, placed, rng.uniform(0, 2 * np.pi), f"NOVEL{cycle}")
         info["added"] = t.gt_id
     return info
@@ -295,7 +300,7 @@ def run(seed, out_dir, variants, dump_state=None):
 
     names = dict(world.names)
     target_ids = {g for g in names if g >= 10}
-    result = {"seed": seed, "cycle_kinds": kinds, "n_ticks": len(ticks), "phase2_start_tick": T2,
+    result = {"seed": seed, "cycle_kinds": kinds, "skipped_events": [c["kind"] for c in cycles if c["info"].get("skipped")], "n_ticks": len(ticks), "phase2_start_tick": T2,
               "scene_params": SCENE_PARAMS, "sensor_params": SENSOR_PARAMS, "scoring_params": SCORING_PARAMS,
               "analysis_params": ANALYSIS_PARAMS, "thing_names": names,
               "slid_in_view": {str(g): ts for g, ts in slid_log.items()},

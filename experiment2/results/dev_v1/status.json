@@ -1,0 +1,80 @@
+{
+ "split": "dev",
+ "seeds": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7
+ ],
+ "git_commit": "34d728af5837fac8513ceceaa8ca18860c3bdd84",
+ "git_dirty_paths": "M experiment2/learner/mechanisms/identity.py",
+ "runner_pid": 1042,
+ "host": "vm",
+ "started": "2026-10-07 13:52:27",
+ "finished": "2026-10-07 14:15:21",
+ "command": "/home/user/Experimenting/experiment2/harness/run_many.py --split dev --parallel 2 --out /home/user/Experimenting/experiment2/results/dev --foreground",
+ "variants": "",
+ "jobs": {
+  "0": {
+   "state": "done",
+   "pid": 1049,
+   "started": "2026-10-07 13:52:27",
+   "finished": "2026-10-07 13:58:12",
+   "seconds": 345
+  },
+  "1": {
+   "state": "done",
+   "pid": 1050,
+   "started": "2026-10-07 13:52:27",
+   "finished": "2026-10-07 13:58:52",
+   "seconds": 385
+  },
+  "2": {
+   "state": "done",
+   "pid": 1330,
+   "started": "2026-10-07 13:58:12",
+   "finished": "2026-10-07 14:04:16",
+   "seconds": 364
+  },
+  "3": {
+   "state": "done",
+   "pid": 1384,
+   "started": "2026-10-07 13:58:52",
+   "finished": "2026-10-07 14:04:29",
+   "seconds": 337
+  },
+  "4": {
+   "state": "done",
+   "pid": 1513,
+   "started": "2026-10-07 14:04:16",
+   "finished": "2026-10-07 14:09:51",
+   "seconds": 336
+  },
+  "5": {
+   "state": "done",
+   "pid": 1559,
+   "started": "2026-10-07 14:04:29",
+   "finished": "2026-10-07 14:09:57",
+   "seconds": 328
+  },
+  "6": {
+   "state": "done",
+   "pid": 1688,
+   "started": "2026-10-07 14:09:51",
+   "finished": "2026-10-07 14:15:18",
+   "seconds": 327
+  },
+  "7": {
+   "state": "done",
+   "pid": 1733,
+   "started": "2026-10-07 14:09:57",
+   "finished": "2026-10-07 14:15:21",
+   "seconds": 325
+  }
+ },
+ "updated": "2026-10-07 14:15:21"
+}
